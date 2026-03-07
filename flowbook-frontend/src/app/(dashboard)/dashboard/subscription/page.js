@@ -12,6 +12,8 @@ import {
   verifySubscription,
 } from "@/services/subscription.service";
 
+export const dynamic = "force-dynamic";
+
 export default function SubscriptionPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -50,10 +52,10 @@ export default function SubscriptionPage() {
     },
   ];
 
- useEffect(() => {
+useEffect(() => {
   fetchBusiness();
   handlePaymentReturn();
-}, []);
+}, [searchParams]);
 
 const handlePaymentReturn = async () => {
   const success = searchParams.get("success");
