@@ -1,78 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Container from "@/components/ui/Container";
 import Spinner from "@/components/ui/Spinner";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
-export default function BookingSuccessPage() {
+export const dynamic = "force-dynamic";
 
+function BookingSuccessContent() {
   const params = useSearchParams();
   const reference = params.get("reference");
 
-  const [loading,setLoading] = useState(true);
-  const [success,setSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState(false);
 
-  useEffect(()=>{
-
-    const verifyPayment = async ()=>{
-
-      try{
-
+  useEffect(() => {
+    const verifyPayment = async () => {
+      try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/verify-booking`,
           {
-            method:"POST",
-            headers:{
-              "Content-Type":"application/json"
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-            body:JSON.stringify({ reference })
+            body: JSON.stringify({ reference }),
           }
         );
 
-        if(res.ok){
+        if (res.ok) {
           setSuccess(true);
         }
-
-      }catch(err){
+      } catch (err) {
         console.error(err);
-      }finally{
+      } finally {
         setLoading(false);
       }
-
     };
 
-    if(reference){
+    if (reference) {
       verifyPayment();
     }
+  }, [reference]);
 
-  },[reference]);
-
-  if(loading){
-    return(
+  if (loading) {
+    return (
       <div className="min-h-screen flex items-center justify-center">
-        <Spinner/>
+        <Spinner />
       </div>
     );
   }
 
-  return(
-
+  return (
     <main className="min-h-screen flex items-center justify-center px-6">
-
       <Container className="max-w-lg">
-
         {success ? (
-
           <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-2xl shadow-soft p-10 text-center space-y-4">
+            <CheckCircle2 size={44} className="mx-auto text-green-600" />
 
-            <CheckCircle2 size={44} className="mx-auto text-green-600"/>
-
-            <h2 className="text-2xl font-semibold">
-              Booking Confirmed
-            </h2>
+            <h2 className="text-2xl font-semibold">Booking Confirmed</h2>
 
             <p className="text-secondaryText text-sm">
               Your payment was successful and your booking has been created.
@@ -84,13 +72,9 @@ export default function BookingSuccessPage() {
             >
               Continue browsing services
             </Link>
-
           </div>
-
         ) : (
-
           <div className="text-center space-y-3">
-
             <h2 className="text-xl font-semibold">
               Payment Verification Failed
             </h2>
@@ -98,15 +82,17 @@ export default function BookingSuccessPage() {
             <p className="text-secondaryText text-sm">
               We could not verify your payment. Please contact support.
             </p>
-
           </div>
-
         )}
-
       </Container>
-
     </main>
-
   );
+}
 
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Spinner /></div>}>
+      <BookingSuccessContent />
+    </Suspense>
+  );
 }
