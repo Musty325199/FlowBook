@@ -18,11 +18,46 @@ const businessSchema = new mongoose.Schema(
       default: "",
       maxlength: 300,
     },
+    about: {
+  type: String,
+  default: "",
+  maxlength: 1000,
+    },
+    yearsOfExperience: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    specialties: {
+      type: [String],
+      default: [],
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
+
+    coverImage: {
+      type: String,
+      default: "",
+    },
 
     location: {
       type: String,
       default: "",
       trim: true,
+    },
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      default: "",
+      trim: true,
+      lowercase: true,
     },
 
     owner: {
@@ -113,7 +148,7 @@ const businessSchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 businessSchema.methods.isSubscriptionActive = function () {

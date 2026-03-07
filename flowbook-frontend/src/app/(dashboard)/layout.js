@@ -17,6 +17,7 @@ export default function DashboardLayout({ children }) {
   const [date, setDate] = useState("");
   const [subscriptionStatus, setSubscriptionStatus] = useState("free");
   const [expiresAt, setExpiresAt] = useState(null);
+  const [businessAvatar, setBusinessAvatar] = useState(null);
 
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -65,6 +66,7 @@ export default function DashboardLayout({ children }) {
         const data = await getBusiness();
         setSubscriptionStatus(data.subscriptionStatus || "free");
         setExpiresAt(data.subscriptionExpiresAt || null);
+        setBusinessAvatar(data.avatar || null);
       } catch {}
     };
 
@@ -248,9 +250,19 @@ export default function DashboardLayout({ children }) {
                 >
                   <button
                     onClick={togglePinned}
-                    className="h-8 w-8 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-medium"
+                    className="h-8 w-8 rounded-full overflow-hidden bg-accent/10 flex items-center justify-center"
                   >
-                    {avatarLetter}
+                    {businessAvatar ? (
+                      <img
+                        src={businessAvatar}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-accent text-xs font-medium">
+                        {avatarLetter}
+                      </span>
+                    )}
                   </button>
 
                   {menuOpen && (

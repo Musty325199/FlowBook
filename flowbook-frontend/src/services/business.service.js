@@ -6,18 +6,28 @@ export const getBusiness = async () => {
 };
 
 export const updateBusiness = async (data) => {
-  const payload = {
-    name: data.name,
-    phone: data.phone,
-    location: data.location,
-    description: data.description,
-    cancellationPolicy: data.cancellationPolicy,
-    workingHours: data.workingHours,
-    bankName: data.bankName,
-    accountNumber: data.accountNumber,
-    accountName: data.accountName
-  };
+  const res = await api.put("/api/business", data);
+  return res.data;
+};
 
-  const res = await api.put("/api/business", payload);
+export const uploadBusinessAvatar = async (file) => {
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  const res = await api.put("/api/business/avatar", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+
+  return res.data;
+};
+
+export const uploadBusinessCover = async (file) => {
+  const formData = new FormData();
+  formData.append("coverImage", file);
+
+  const res = await api.put("/api/business/cover", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+
   return res.data;
 };

@@ -46,14 +46,44 @@ export default function VendorCard({ vendor, featured }) {
   return(
 
     <div
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border dark:border-darkBorder bg-surface dark:bg-darkSurface shadow-soft transition hover:shadow-xl hover:-translate-y-1 ${
+      className={`group relative flex flex-col justify-between rounded-xl border border-border dark:border-darkBorder bg-surface dark:bg-darkSurface shadow-soft transition hover:shadow-xl hover:-translate-y-1 ${
         featured ? "ring-2 ring-accent/20" : ""
       }`}
     >
 
-      <div className="h-20 bg-gradient-to-r from-accent/20 to-accent/5"/>
+      <div className="relative h-28 w-full rounded-t-xl overflow-hidden">
 
-      <div className="p-6 flex flex-col justify-between flex-1">
+        {vendor.coverImage ? (
+          <img
+            src={vendor.coverImage}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-accent/20 to-accent/5"/>
+        )}
+
+        <div className="absolute left-4 top-full -translate-y-1/2">
+
+          <div className="h-14 w-14 rounded-full overflow-hidden border-4 border-background dark:border-darkBackground shadow bg-muted dark:bg-darkSurface">
+
+            {vendor.avatar ? (
+              <img
+                src={vendor.avatar}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white bg-accent text-sm font-semibold">
+                {vendor.name?.charAt(0)}
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div className="p-6 pt-10 flex flex-col justify-between flex-1">
 
         <div className="space-y-3">
 

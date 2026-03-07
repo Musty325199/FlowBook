@@ -46,3 +46,11 @@ body {
 .custom-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(120,120,120,0.7);
 }
+
+body {
+  scrollbar-width: thin;
+}
+
+* {
+  scrollbar-color: rgba(120,120,120,0.4) transparent;
+}

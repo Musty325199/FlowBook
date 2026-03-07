@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   ChevronDown,
   X,
@@ -30,9 +30,12 @@ export default function AppointmentsPage() {
   const [ownerMessage, setOwnerMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [viewMode, setViewMode] = useState("list");
-
+  const [calendarView, setCalendarView] = useState("day");
   const [subscriptionStatus, setSubscriptionStatus] = useState("free");
   const [expiresAt, setExpiresAt] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const scrollRef = useRef(null);
 
   const isSubscriptionActive =
     subscriptionStatus === "active" &&
@@ -62,9 +65,127 @@ export default function AppointmentsPage() {
   useEffect(() => {
     fetchBookings();
     fetchBusiness();
-    const interval = setInterval(fetchBookings, 10000);
+    const interval = setInterval(fetchBookings, 8000);
     return () => clearInterval(interval);
   }, []);
+
+  const filtered = useMemo(() => {
+    return appointments.filter((a) => {
+      const matchesSearch =
+        a.service?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        a.customerName?.toLowerCase().includes(search.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || a.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [appointments, search, statusFilter]);
+
+  const groupedByDay = useMemo(() => {
+    const map = {};
+
+    filtered.forEach((booking) => {
+      const day = new Date(booking.date).toLocaleDateString();
+
+      if (!map[day]) map[day] = [];
+
+      map[day].push(booking);
+    });
+
+    return map;
+  }, [filtered]);
+
+  const todayStats = useMemo(() => {
+    const today = new Date().toLocaleDateString();
+
+    const todayBookings = appointments.filter(
+      (b) => new Date(b.date).toLocaleDateString() === today,
+    );
+
+    const completedToday = todayBookings.filter(
+      (b) => b.status === "completed",
+    );
+
+    const pendingToday = todayBookings.filter((b) => b.status === "pending");
+
+    const upcoming = appointments.filter((b) => new Date(b.date) > new Date());
+
+    return {
+      todayBookings,
+      completedToday,
+      pendingToday,
+      upcoming,
+    };
+  }, [appointments]);
+
+  const todaysSchedule = useMemo(() => {
+    const today = new Date().toLocaleDateString();
+
+    return appointments
+      .filter((b) => new Date(b.date).toLocaleDateString() === today)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 5);
+  }, [appointments]);
+
+  const statusStyle = (status) =>
+    status === "confirmed"
+      ? "bg-accent/10 text-accent"
+      : status === "completed"
+        ? "bg-success/10 text-success"
+        : status === "cancelled"
+          ? "bg-danger/10 text-danger"
+          : "bg-muted text-secondaryText";
+
+  const statusButtonStyle = (status) => {
+    if (status === "confirmed") return "bg-accent text-white";
+    if (status === "completed") return "bg-success text-white";
+    return "bg-danger text-white";
+  };
+
+  const disabledStyle = "opacity-50 cursor-not-allowed";
+
+  const timeSlots = useMemo(() => {
+    const slots = [];
+
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const hour = String(h).padStart(2, "0");
+        const min = String(m).padStart(2, "0");
+        slots.push(`${hour}:${min}`);
+      }
+    }
+
+    return slots;
+  }, []);
+
+  const getWeekDays = () => {
+    const start = new Date(currentDate);
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diff);
+
+    const days = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+
+    return days;
+  };
+
+  const goToNextWeek = () => {
+    const next = new Date(currentDate);
+    next.setDate(next.getDate() + 7);
+    setCurrentDate(next);
+  };
+
+  const goToPrevWeek = () => {
+    const prev = new Date(currentDate);
+    prev.setDate(prev.getDate() - 7);
+    setCurrentDate(prev);
+  };
 
   const requestStatusUpdate = (status) => {
     if (!isSubscriptionActive) {
@@ -101,7 +222,6 @@ export default function AppointmentsPage() {
       toast.error("Failed to update booking status");
     }
   };
-
   const handleSendMessage = async () => {
     if (!selected || !ownerMessage.trim()) {
       toast.error("Please enter a message");
@@ -130,50 +250,109 @@ export default function AppointmentsPage() {
     }
   };
 
-  const filtered = useMemo(() => {
-    return appointments.filter((a) => {
-      const matchesSearch =
-        a.service?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        a.customerName?.toLowerCase().includes(search.toLowerCase());
+  const scrollToCurrentTime = () => {
+    if (!scrollRef.current) return;
 
-      const matchesStatus = statusFilter === "all" || a.status === statusFilter;
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [appointments, search, statusFilter]);
+    const slotIndex = hour * 2 + (minute >= 30 ? 1 : 0);
 
-  const statusStyle = (status) =>
-    status === "confirmed"
-      ? "bg-accent/10 text-accent"
-      : status === "completed"
-        ? "bg-success/10 text-success"
-        : status === "cancelled"
-          ? "bg-danger/10 text-danger"
-          : "bg-muted text-secondaryText";
+    const scrollPosition = slotIndex * 64;
 
-  const statusButtonStyle = (status) => {
-    if (status === "confirmed") return "bg-accent text-white";
-    if (status === "completed") return "bg-success text-white";
-    return "bg-danger text-white";
+    scrollRef.current.scrollTop = scrollPosition - 200;
   };
 
-  const disabledStyle = "opacity-50 cursor-not-allowed";
+  useEffect(() => {
+    if (viewMode === "calendar" && calendarView === "day") {
+      setTimeout(scrollToCurrentTime, 200);
+    }
+  }, [viewMode, calendarView]);
 
-  const groupedByDay = useMemo(() => {
-    const map = {};
+  const getBookingsForSlot = (slot, date) => {
+    return filtered.filter((b) => {
+      const d = new Date(b.date);
 
-    filtered.forEach((booking) => {
-      const day = new Date(booking.date).toLocaleDateString();
+      const slotHour = slot.split(":")[0];
+      const slotMin = slot.split(":")[1];
 
-      if (!map[day]) map[day] = [];
+      const h = String(d.getHours()).padStart(2, "0");
+      const m = String(d.getMinutes()).padStart(2, "0");
 
-      map[day].push(booking);
+      const sameTime = `${h}:${m}` === `${slotHour}:${slotMin}`;
+      const sameDay = d.toLocaleDateString() === date.toLocaleDateString();
+
+      return sameTime && sameDay;
     });
+  };
 
-    return map;
-  }, [filtered]);
   return (
     <div className="space-y-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-4">
+          <p className="text-xs text-secondaryText">Today Bookings</p>
+          <p className="text-xl font-semibold">
+            {todayStats.todayBookings.length}
+          </p>
+        </div>
+
+        <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-4">
+          <p className="text-xs text-secondaryText">Completed Today</p>
+          <p className="text-xl font-semibold">
+            {todayStats.completedToday.length}
+          </p>
+        </div>
+
+        <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-4">
+          <p className="text-xs text-secondaryText">Pending</p>
+          <p className="text-xl font-semibold">
+            {todayStats.pendingToday.length}
+          </p>
+        </div>
+
+        <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-4">
+          <p className="text-xs text-secondaryText">Upcoming</p>
+          <p className="text-xl font-semibold">{todayStats.upcoming.length}</p>
+        </div>
+      </div>
+
+      <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-3">Today's Schedule</h3>
+
+        {todaysSchedule.length > 0 ? (
+          <div className="space-y-2">
+            {todaysSchedule.map((b) => {
+              const d = new Date(b.date);
+
+              return (
+                <div
+                  key={b._id}
+                  onClick={() => setSelected(b)}
+                  className="flex justify-between items-center text-sm hover:bg-muted dark:hover:bg-darkSurface/60 rounded-md px-2 py-2 cursor-pointer"
+                >
+                  <div>
+                    <p className="font-medium">{b.service?.name}</p>
+
+                    <p className="text-xs text-secondaryText">
+                      {b.customerName}
+                    </p>
+                  </div>
+
+                  <span className="text-xs">
+                    {d.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-secondaryText">No bookings today</p>
+        )}
+      </div>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-3">
           <CalendarDays size={22} />
@@ -242,6 +421,28 @@ export default function AppointmentsPage() {
               Calendar
             </button>
           </div>
+
+          {viewMode === "calendar" && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCalendarView("day")}
+                className={`px-4 py-2 text-sm rounded-md border ${
+                  calendarView === "day" ? "bg-accent text-white" : ""
+                }`}
+              >
+                Day
+              </button>
+
+              <button
+                onClick={() => setCalendarView("week")}
+                className={`px-4 py-2 text-sm rounded-md border ${
+                  calendarView === "week" ? "bg-accent text-white" : ""
+                }`}
+              >
+                Week
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -349,61 +550,144 @@ export default function AppointmentsPage() {
         </>
       )}
 
-      {viewMode === "calendar" && (
-        <div className="space-y-6">
-          {Object.keys(groupedByDay).length === 0 ? (
-            <div className="text-center py-24 text-secondaryText">
-              No bookings available.
-            </div>
-          ) : (
-            Object.entries(groupedByDay).map(([day, bookings]) => (
+      {viewMode === "calendar" && calendarView === "day" && (
+        <div
+          ref={scrollRef}
+          className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl overflow-y-auto custom-scroll max-h-[75vh]"
+        >
+          {timeSlots.map((slot) => {
+            const bookings = filtered.filter((b) => {
+              const d = new Date(b.date);
+
+              const h = String(d.getHours()).padStart(2, "0");
+              const m = String(d.getMinutes()).padStart(2, "0");
+
+              return `${h}:${m}` === slot;
+            });
+
+            return (
               <div
-                key={day}
-                className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl shadow-soft"
+                key={slot}
+                className="flex border-b border-border dark:border-darkBorder px-6 py-4 items-start"
               >
-                <div className="px-6 py-4 border-b border-border dark:border-darkBorder font-semibold">
-                  {day}
-                </div>
+                <div className="w-20 text-sm text-secondaryText">{slot}</div>
 
-                <div className="divide-y divide-border dark:divide-darkBorder">
-                  {bookings.map((booking) => (
-                    <div
-                      key={booking._id}
-                      onClick={() => setSelected(booking)}
-                      className="px-6 py-4 flex items-center justify-between hover:bg-muted dark:hover:bg-darkSurface/60 cursor-pointer"
-                    >
-                      <div>
-                        <p className="font-medium">{booking.service?.name}</p>
+                <div className="flex-1 space-y-2">
+                  {bookings.length > 0 ? (
+                    bookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        onClick={() => setSelected(booking)}
+                        className="bg-accent/10 text-accent rounded-md px-3 py-2 cursor-pointer flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">
+                            {booking.service?.name}
+                          </p>
 
-                        <p className="text-sm text-secondaryText">
-                          {booking.customerName}
-                        </p>
-                      </div>
-
-                      <div className="text-right">
-                        <p className="text-sm">
-                          {new Date(booking.date).toLocaleTimeString()}
-                        </p>
+                          <p className="text-xs text-secondaryText">
+                            {booking.customerName}
+                          </p>
+                        </div>
 
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyle(
+                          className={`px-2 py-1 rounded-full text-xs ${statusStyle(
                             booking.status,
                           )}`}
                         >
                           {booking.status}
                         </span>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-xs text-secondaryText">—</div>
+                  )}
                 </div>
               </div>
-            ))
-          )}
+            );
+          })}
+        </div>
+      )}
+      {viewMode === "calendar" && calendarView === "week" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={goToPrevWeek}
+              className="px-3 py-1 text-sm border rounded-md hover:bg-muted dark:hover:bg-darkSurface/60"
+            >
+              Prev
+            </button>
+
+            <p className="text-sm font-medium">
+              Week of {getWeekDays()[0].toLocaleDateString()}
+            </p>
+
+            <button
+              onClick={goToNextWeek}
+              className="px-3 py-1 text-sm border rounded-md hover:bg-muted dark:hover:bg-darkSurface/60"
+            >
+              Next
+            </button>
+          </div>
+
+          <div className="grid grid-cols-8 border border-border dark:border-darkBorder rounded-xl overflow-hidden">
+            <div className="bg-muted dark:bg-darkSurface border-r border-border dark:border-darkBorder">
+              {timeSlots.map((slot) => (
+                <div
+                  key={slot}
+                  className="h-16 flex items-start justify-end pr-2 text-xs text-secondaryText border-b border-border dark:border-darkBorder"
+                >
+                  {slot}
+                </div>
+              ))}
+            </div>
+
+            {getWeekDays().map((day) => (
+              <div
+                key={day.toISOString()}
+                className="border-r border-border dark:border-darkBorder"
+              >
+                <div className="text-center text-xs py-2 border-b border-border dark:border-darkBorder bg-muted dark:bg-darkSurface">
+                  {day.toLocaleDateString(undefined, {
+                    weekday: "short",
+                    day: "numeric",
+                  })}
+                </div>
+
+                {timeSlots.map((slot) => {
+                  const bookings = getBookingsForSlot(slot, day);
+
+                  return (
+                    <div
+                      key={slot}
+                      className="h-16 border-b border-border dark:border-darkBorder relative"
+                    >
+                      {bookings.map((booking) => (
+                        <div
+                          key={booking._id}
+                          onClick={() => setSelected(booking)}
+                          className="absolute inset-1 bg-accent/10 text-accent rounded-md p-2 cursor-pointer flex flex-col justify-between"
+                        >
+                          <span className="text-[11px] font-medium leading-tight">
+                            {booking.service?.name}
+                          </span>
+
+                          <span className="text-[10px] text-secondaryText">
+                            {booking.customerName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-start md:items-center justify-center z-50 px-4 py-8 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-start md:items-center justify-center z-50 px-4 py-8 overflow-y-auto custom-scroll">
           <div className="bg-surface dark:bg-darkSurface w-full max-w-lg rounded-xl shadow-soft p-6 space-y-6 relative my-auto">
             <button
               onClick={() => setSelected(null)}
@@ -413,7 +697,6 @@ export default function AppointmentsPage() {
             </button>
 
             <h3 className="text-lg font-semibold">Appointment Details</h3>
-
             <div className="space-y-3 text-sm">
               <p>
                 <strong>Service:</strong> {selected.service?.name}
@@ -580,7 +863,7 @@ export default function AppointmentsPage() {
       )}
 
       {confirmStatus && (
-        <div className="fixed inset-0 bg-black/40 flex items-start md:items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-start md:items-center justify-center z-50 p-4 overflow-y-auto custom-scroll">
           <div className="bg-surface dark:bg-darkSurface w-full max-w-lg rounded-xl shadow-soft p-6 space-y-6 relative mt-16 md:mt-0">
             <h3 className="text-lg font-semibold">Confirm Status Change</h3>
 

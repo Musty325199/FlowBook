@@ -6,6 +6,7 @@ import {
   getBusinessPublic,
   getPublicBusinesses,
 } from "../controllers/businessController.js";
+import { uploadImage } from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
@@ -16,5 +17,9 @@ router.use(authMiddleware);
 
 router.get("/", getBusiness);
 router.put("/", updateBusiness);
+
+router.put("/avatar", uploadImage("avatar"), updateBusiness);
+
+router.put("/cover", uploadImage("coverImage"), updateBusiness);
 
 export default router;

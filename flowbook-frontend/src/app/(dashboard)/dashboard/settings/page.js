@@ -2,20 +2,59 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { Upload, Trash2, ImageIcon, User } from "lucide-react";
 import { toast } from "sonner";
 import { enable2FA, confirm2FA, disable2FA } from "@/services/auth.service";
-import { getBusiness, updateBusiness } from "@/services/business.service";
+import {
+  getBusiness,
+  updateBusiness,
+  uploadBusinessAvatar,
+  uploadBusinessCover,
+} from "@/services/business.service";
 import { useAuth } from "@/context/AuthContext";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
 
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [coverPreview, setCoverPreview] = useState("");
+
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  const removeAvatar = async () => {
+    try {
+      await updateBusiness({ avatar: "" });
+      setAvatarPreview("");
+      toast.success("Avatar removed");
+    } catch {
+      toast.error("Failed to remove avatar");
+    }
+  };
+
+  const removeCover = async () => {
+    try {
+      await updateBusiness({ coverImage: "" });
+      setCoverPreview("");
+      toast.success("Cover removed");
+    } catch {
+      toast.error("Failed to remove cover");
+    }
+  };
+
   const [form, setForm] = useState({
     businessName: "",
     phone: "",
+    email: "",
     location: "",
     description: "",
+    about: "",
+    yearsOfExperience: "",
+    specialties: "",
     bankName: "",
     accountNumber: "",
     accountName: "",
@@ -52,13 +91,44 @@ export default function SettingsPage() {
   });
 
   const toggleClosed = (day) => {
-    setWorkingHours((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        closed: !prev[day].closed,
-      },
-    }));
+    setWorkingHours((prev) => {
+      const isClosing = !prev[day].closed;
+
+      return {
+        ...prev,
+        [day]: {
+          closed: isClosing,
+          open: isClosing ? "" : "09:00",
+          close: isClosing ? "" : "18:00",
+        },
+      };
+    });
+  };
+
+  const handleAvatarUpload = async (file) => {
+    try {
+      setUploadingAvatar(true);
+      const res = await uploadBusinessAvatar(file);
+      setAvatarPreview(res.avatar);
+      toast.success("Avatar updated");
+    } catch {
+      toast.error("Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleCoverUpload = async (file) => {
+    try {
+      setUploadingCover(true);
+      const res = await uploadBusinessCover(file);
+      setCoverPreview(res.coverImage);
+      toast.success("Cover updated");
+    } catch {
+      toast.error("Failed to upload cover image");
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   const handleEnable2FA = async () => {
@@ -93,7 +163,6 @@ export default function SettingsPage() {
       setConfirming2FA(true);
 
       await confirm2FA(twoFactorCode);
-
       await refreshUser();
 
       toast.success("Two-factor authentication enabled");
@@ -112,34 +181,55 @@ export default function SettingsPage() {
   const handleDisable2FA = async () => {
     try {
       await disable2FA();
-
       await refreshUser();
-
       toast.success("Two-factor authentication disabled");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to disable 2FA");
     }
   };
-
   const handleSave = async () => {
     try {
       const formattedHours = {};
 
-      Object.keys(workingHours).forEach((day) => {
+      for (const day of Object.keys(workingHours)) {
         const d = workingHours[day];
 
+        if (!d.closed) {
+          if (!d.open || !d.close) {
+            toast.error(`${day}: please set both open and close time`);
+            return;
+          }
+
+          const [oh, om] = d.open.split(":").map(Number);
+          const [ch, cm] = d.close.split(":").map(Number);
+
+          const openMinutes = oh * 60 + om;
+          const closeMinutes = ch * 60 + cm;
+
+          if (openMinutes >= closeMinutes) {
+            toast.error(`${day}: closing time must be after opening time`);
+            return;
+          }
+        }
+
         formattedHours[day] = {
-          open: d.closed ? "" : d.open || "",
-          close: d.closed ? "" : d.close || "",
+          open: d.closed ? "" : d.open,
+          close: d.closed ? "" : d.close,
           closed: d.closed || false,
         };
-      });
-
+      }
       await updateBusiness({
         name: form.businessName,
         phone: form.phone,
+        email: form.email,
         location: form.location,
         description: form.description,
+        about: form.about,
+        yearsOfExperience: Number(form.yearsOfExperience) || 0,
+        specialties: form.specialties
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
         cancellationPolicy: form.cancellationPolicy,
         workingHours: formattedHours,
         bankName: form.bankName,
@@ -156,8 +246,6 @@ export default function SettingsPage() {
 
       setHasChanges(false);
     } catch (err) {
-      console.error(err);
-
       toast.error(err?.response?.data?.message || "Unable to update settings");
     }
   };
@@ -170,8 +258,12 @@ export default function SettingsPage() {
         const newForm = {
           businessName: data.name || "",
           phone: data.phone || "",
+          email: data.email || "",
           location: data.location || "",
           description: data.description || "",
+          about: data.about || "",
+          yearsOfExperience: data.yearsOfExperience || "",
+          specialties: data.specialties ? data.specialties.join(", ") : "",
           bankName: data.bankName || "",
           accountNumber: data.accountNumber || "",
           accountName: data.accountName || "",
@@ -192,17 +284,26 @@ export default function SettingsPage() {
           setExpiresAt(data.subscriptionExpiresAt);
         }
 
+        if (data.avatar) {
+          setAvatarPreview(data.avatar);
+        }
+
+        if (data.coverImage) {
+          setCoverPreview(data.coverImage);
+        }
+
         initialData.current = {
           form: JSON.stringify(newForm),
           workingHours: JSON.stringify(data.workingHours || workingHours),
         };
-      } catch (err) {
+      } catch {
         toast.error("Failed to load business settings");
       }
     };
 
     loadBusiness();
   }, []);
+
   useEffect(() => {
     const currentForm = JSON.stringify(form);
     const currentHours = JSON.stringify(workingHours);
@@ -222,6 +323,94 @@ export default function SettingsPage() {
       <header>
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
       </header>
+
+      <div className="space-y-6">
+        <div className="relative w-full h-44 sm:h-52 rounded-xl overflow-hidden bg-muted dark:bg-darkSurface border border-border dark:border-darkBorder">
+          {coverPreview ? (
+            <img src={coverPreview} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-secondaryText">
+              <ImageIcon size={32} />
+            </div>
+          )}
+
+          <div className="absolute bottom-3 right-3 flex gap-2">
+            <button
+              onClick={() => coverInputRef.current.click()}
+              className="flex items-center gap-1 bg-black/60 hover:bg-black/80 text-white text-xs px-3 py-1.5 rounded-md transition"
+            >
+              <Upload size={14} />
+              {uploadingCover ? "Uploading..." : "Change"}
+            </button>
+
+            {coverPreview && (
+              <button
+                onClick={removeCover}
+                className="flex items-center gap-1 bg-red-600/90 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-md transition"
+              >
+                <Trash2 size={14} />
+                Remove
+              </button>
+            )}
+          </div>
+
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              setCoverPreview(URL.createObjectURL(file));
+              handleCoverUpload(file);
+            }}
+          />
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 rounded-full overflow-hidden bg-muted dark:bg-darkSurface border border-border dark:border-darkBorder flex items-center justify-center">
+            {avatarPreview ? (
+              <img src={avatarPreview} className="w-full h-full object-cover" />
+            ) : (
+              <User size={28} className="text-secondaryText" />
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => avatarInputRef.current.click()}
+              className="flex items-center gap-2 bg-accent text-white text-sm px-4 py-2 rounded-md hover:bg-accent/90 transition"
+            >
+              <Upload size={16} />
+              {uploadingAvatar ? "Uploading..." : "Change Avatar"}
+            </button>
+
+            {avatarPreview && (
+              <button
+                onClick={removeAvatar}
+                className="flex items-center gap-2 text-xs text-red-500 hover:text-red-600 transition"
+              >
+                <Trash2 size={14} />
+                Remove Avatar
+              </button>
+            )}
+          </div>
+
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              setAvatarPreview(URL.createObjectURL(file));
+              handleAvatarUpload(file);
+            }}
+          />
+        </div>
+      </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
         <section className="lg:col-span-2 space-y-8">
@@ -248,6 +437,14 @@ export default function SettingsPage() {
               />
 
               <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full px-4 py-2 rounded-md border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent"
+                placeholder="Business Email"
+              />
+
+              <input
                 type="text"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -265,6 +462,36 @@ export default function SettingsPage() {
               rows={3}
               placeholder="Business Description"
             />
+
+            <textarea
+              value={form.about}
+              onChange={(e) => setForm({ ...form, about: e.target.value })}
+              className="w-full px-4 py-2 rounded-md border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+              rows={4}
+              placeholder="About your business (history, mission, experience...)"
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2 text-sm">
+              <input
+                type="number"
+                value={form.yearsOfExperience}
+                onChange={(e) =>
+                  setForm({ ...form, yearsOfExperience: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-md border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent"
+                placeholder="Years of Experience"
+              />
+
+              <input
+                type="text"
+                value={form.specialties}
+                onChange={(e) =>
+                  setForm({ ...form, specialties: e.target.value })
+                }
+                className="w-full px-4 py-2 rounded-md border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent"
+                placeholder="Specialties (comma separated)"
+              />
+            </div>
 
             <textarea
               value={form.cancellationPolicy}
@@ -407,7 +634,7 @@ export default function SettingsPage() {
 
             {qrCode && (
               <div className="space-y-4 text-sm">
-                <img src={qrCode} alt="QR Code" className="w-40 h-40 mx-auto" />
+                <img src={qrCode} className="w-40 h-40 mx-auto" />
 
                 <input
                   type="text"
@@ -415,7 +642,6 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     setTwoFactorCode(e.target.value.replace(/\D/g, ""))
                   }
-                  placeholder="Enter 6-digit code"
                   maxLength={6}
                   className="w-full text-center tracking-[0.4em] px-4 py-2 rounded-md border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent"
                 />

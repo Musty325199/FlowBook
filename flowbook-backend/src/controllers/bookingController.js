@@ -44,6 +44,16 @@ export const createBooking = async (req, res, next) => {
     }
 
     const bookingDate = new Date(date);
+    const now = new Date();
+
+    if (bookingDate <= now) {
+      return res.status(400).json({
+        message: "Cannot book a past time slot",
+      });
+    }
+    if (isNaN(bookingDate.getTime())) {
+      return res.status(400).json({ message: "Invalid booking date" });
+    }
 
     const existingBooking = await Booking.findOne({
       business: business._id,
@@ -138,16 +148,15 @@ export const getBookings = async (req, res, next) => {
 
 export const updateBookingStatus = async (req, res, next) => {
   try {
-
     const { status } = req.body;
 
-    if (!["pending","confirmed","completed","cancelled"].includes(status)) {
+    if (!["pending", "confirmed", "completed", "cancelled"].includes(status)) {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
     const booking = await Booking.findOne({
       _id: req.params.id,
-      business: req.user.business
+      business: req.user.business,
     }).populate("service");
 
     if (!booking) {
@@ -176,7 +185,6 @@ export const updateBookingStatus = async (req, res, next) => {
     `;
 
     if (status === "completed") {
-
       const reviewLink = `${process.env.CLIENT_URL}/review/${booking._id}`;
 
       emailHTML = `
@@ -205,12 +213,7 @@ export const updateBookingStatus = async (req, res, next) => {
 
     res.json(booking);
 
-    sendEmail(
-      booking.customerEmail,
-      `Booking ${booking.status}`,
-      emailHTML
-    );
-
+    sendEmail(booking.customerEmail, `Booking ${booking.status}`, emailHTML);
   } catch (err) {
     next(err);
   }

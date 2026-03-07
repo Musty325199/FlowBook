@@ -8,7 +8,7 @@ import { getBusinessReviews } from "@/services/review.service";
 import StarRating from "@/components/reviews/StarRating";
 import ServiceCard from "@/components/vendor/ServiceCard";
 import Spinner from "@/components/ui/Spinner";
-import { Moon, Sun, MapPin, Clock } from "lucide-react";
+import { Moon, Sun, MapPin, Clock, Phone, Mail } from "lucide-react";
 
 export default function VendorProfilePage() {
   const { slug } = useParams();
@@ -145,22 +145,39 @@ export default function VendorProfilePage() {
 
       <div className="max-w-7xl mx-auto px-6 mt-6">
         <div className="relative rounded-3xl overflow-hidden border border-border dark:border-darkBorder">
-          <div className="h-40 bg-gradient-to-r from-accent/30 via-accent/10 to-transparent" />
+          <div className="h-40 sm:h-48 md:h-56 w-full">
+            {business.coverImage ? (
+              <img
+                src={business.coverImage}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-accent/30 via-accent/10 to-transparent" />
+            )}
+          </div>
 
-          <div className="bg-surface dark:bg-darkSurface px-8 pb-8 pt-14 text-center">
-            <div className="absolute left-1/2 -translate-x-1/2 top-20">
-              <div className="h-20 w-20 rounded-full bg-accent flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                {business.name.charAt(0)}
+          <div className="bg-surface dark:bg-darkSurface px-8 pb-8 pt-16 text-center relative">
+            <div className="absolute left-1/2 -translate-x-1/2 -top-12">
+              <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-background dark:border-darkBackground shadow-lg bg-muted dark:bg-darkSurface">
+                {business.avatar ? (
+                  <img
+                    src={business.avatar}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white bg-accent text-2xl font-bold">
+                    {business.name.charAt(0)}
+                  </div>
+                )}
               </div>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold mt-6 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-bold mt-10 tracking-tight">
               {business.name}
             </h1>
 
             <div className="flex justify-center items-center gap-2 mt-2">
               <StarRating rating={Math.round(rating)} />
-
               <span className="text-sm text-secondaryText">
                 {rating.toFixed(1)} ({count} reviews)
               </span>
@@ -190,6 +207,30 @@ export default function VendorProfilePage() {
                 <p className="text-secondaryText">Status</p>
               </div>
             </div>
+
+            {(business.phone || business.email) && (
+              <div className="flex flex-wrap justify-center gap-3 mt-6">
+                {business.phone && (
+                  <a
+                    href={`tel:${business.phone}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition"
+                  >
+                    <Phone size={16} />
+                    Call Business
+                  </a>
+                )}
+
+                {business.email && (
+                  <a
+                    href={`mailto:${business.email}`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border dark:border-darkBorder text-sm font-medium hover:bg-muted dark:hover:bg-darkSurface transition"
+                  >
+                    <Mail size={16} />
+                    Email Business
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -206,7 +247,6 @@ export default function VendorProfilePage() {
               const display = hours.closed
                 ? "Closed"
                 : `${hours.open} - ${hours.close}`;
-
               return (
                 <div
                   key={day}
@@ -221,6 +261,46 @@ export default function VendorProfilePage() {
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {(business.about ||
+        business.yearsOfExperience ||
+        (business.specialties && business.specialties.length > 0)) && (
+        <section className="max-w-3xl mx-auto mt-12 px-6">
+          <div className="rounded-2xl border border-border dark:border-darkBorder bg-surface dark:bg-darkSurface p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-center">
+              About {business.name}
+            </h2>
+
+            {business.about && (
+              <p className="text-sm text-secondaryText text-center">
+                {business.about}
+              </p>
+            )}
+
+            {business.yearsOfExperience > 0 && (
+              <p className="text-sm text-center">
+                <span className="font-semibold">
+                  {business.yearsOfExperience}+ years
+                </span>{" "}
+                of experience
+              </p>
+            )}
+
+            {business.specialties && business.specialties.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 pt-2">
+                {business.specialties.map((item, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1 text-xs rounded-full bg-accent/10 text-accent font-medium"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -252,7 +332,7 @@ export default function VendorProfilePage() {
 
         {count > 0 && (
           <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-6 space-y-3">
-            {[5,4,3,2,1].map((star)=>{
+            {[5, 4, 3, 2, 1].map((star) => {
               const value = distribution[star];
               const percent = count ? (value / count) * 100 : 0;
 
@@ -286,9 +366,7 @@ export default function VendorProfilePage() {
                 className="p-5 rounded-xl border border-border dark:border-darkBorder bg-surface dark:bg-darkSurface"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-sm">
-                    {review.customerName}
-                  </p>
+                  <p className="font-semibold text-sm">{review.customerName}</p>
 
                   <StarRating rating={review.rating} />
                 </div>
@@ -320,6 +398,28 @@ export default function VendorProfilePage() {
           </div>
         )}
       </section>
+
+      {(business.phone || business.email) && (
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+          {business.phone && (
+            <a
+              href={`tel:${business.phone}`}
+              className="flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white shadow-lg hover:scale-105 transition"
+            >
+              <Phone size={22} />
+            </a>
+          )}
+
+          {business.email && (
+            <a
+              href={`mailto:${business.email}`}
+              className="flex items-center justify-center w-14 h-14 rounded-full bg-white dark:bg-darkSurface border border-border dark:border-darkBorder shadow-lg hover:scale-105 transition"
+            >
+              <Mail size={22} />
+            </a>
+          )}
+        </div>
+      )}
 
       <div className="h-20" />
     </main>
