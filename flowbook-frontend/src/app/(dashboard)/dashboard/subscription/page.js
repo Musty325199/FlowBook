@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default function SubscriptionPage() {
+function SubscriptionContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -52,92 +52,92 @@ export default function SubscriptionPage() {
     },
   ];
 
-useEffect(() => {
-  fetchBusiness();
-  handlePaymentReturn();
-}, [searchParams]);
+  useEffect(() => {
+    fetchBusiness();
+    handlePaymentReturn();
+  }, [searchParams]);
 
-const handlePaymentReturn = async () => {
-  const success = searchParams.get("success");
-  const reference = localStorage.getItem("flowbook_payment_ref");
+  const handlePaymentReturn = async () => {
+    const success = searchParams.get("success");
+    const reference = localStorage.getItem("flowbook_payment_ref");
 
-  if (success && reference) {
+    if (success && reference) {
+      try {
+        await verifySubscription(reference);
+        toast.success("Subscription activated successfully");
+        await fetchBusiness();
+        localStorage.removeItem("flowbook_payment_ref");
+      } catch {
+        toast.error("Unable to verify payment");
+      } finally {
+        router.replace("/dashboard/subscription");
+      }
+    }
+  };
+
+  const fetchBusiness = async () => {
     try {
-      await verifySubscription(reference);
-      toast.success("Subscription activated successfully");
-      await fetchBusiness();
-      localStorage.removeItem("flowbook_payment_ref");
-    } catch {
-      toast.error("Unable to verify payment");
+      const data = await getBusiness();
+      setSubscriptionStatus(data.subscriptionStatus || "free");
+      setCurrentPlan(data.subscriptionPlan || null);
+
+      if (data.subscriptionExpiresAt) {
+        const date = new Date(data.subscriptionExpiresAt);
+        setExpiresAt(isNaN(date) ? null : date);
+      } else {
+        setExpiresAt(null);
+      }
+    } catch {}
+  };
+
+  const handleUpgrade = async (planId) => {
+    if (planId === currentPlan && subscriptionStatus === "active") {
+      toast.info("You are already on this plan");
+      return;
+    }
+
+    try {
+      setLoadingPlan(planId);
+      const data = await startSubscription(planId);
+
+      if (data?.authorizationUrl) {
+        localStorage.setItem("flowbook_payment_ref", data.reference);
+        window.location.href = data.authorizationUrl;
+      } else {
+        toast.error("Unable to start subscription");
+      }
+    } catch (err) {
+      toast.error(err?.message || "Subscription failed");
     } finally {
-      router.replace("/dashboard/subscription");
+      setLoadingPlan(null);
     }
-  }
-};
+  };
 
-const fetchBusiness = async () => {
-  try {
-    const data = await getBusiness();
-    setSubscriptionStatus(data.subscriptionStatus || "free");
-    setCurrentPlan(data.subscriptionPlan || null);
-
-    if (data.subscriptionExpiresAt) {
-      const date = new Date(data.subscriptionExpiresAt);
-      setExpiresAt(isNaN(date) ? null : date);
-    } else {
-      setExpiresAt(null);
+  const handleCancel = async () => {
+    try {
+      await cancelSubscription();
+      toast.success("Subscription cancelled");
+      await fetchBusiness();
+      setConfirmCancel(false);
+    } catch {
+      toast.error("Unable to cancel subscription");
     }
-  } catch {}
-};
+  };
 
-const handleUpgrade = async (planId) => {
-  if (planId === currentPlan && subscriptionStatus === "active") {
-    toast.info("You are already on this plan");
-    return;
-  }
+  const formatDate = (date) => {
+    if (!date) return "—";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "—";
 
-  try {
-    setLoadingPlan(planId);
-    const data = await startSubscription(planId);
+    return d.toLocaleDateString("en-NG", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
-    if (data?.authorizationUrl) {
-      localStorage.setItem("flowbook_payment_ref", data.reference);
-      window.location.href = data.authorizationUrl;
-    } else {
-      toast.error("Unable to start subscription");
-    }
-  } catch (err) {
-    toast.error(err?.message || "Subscription failed");
-  } finally {
-    setLoadingPlan(null);
-  }
-};
-
-const handleCancel = async () => {
-  try {
-    await cancelSubscription();
-    toast.success("Subscription cancelled");
-    await fetchBusiness();
-    setConfirmCancel(false);
-  } catch {
-    toast.error("Unable to cancel subscription");
-  }
-};
-
-const formatDate = (date) => {
-  if (!date) return "—";
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return "—";
-
-  return d.toLocaleDateString("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const isActive =
-  subscriptionStatus === "active" && expiresAt && expiresAt > new Date();
+  const isActive =
+    subscriptionStatus === "active" && expiresAt && expiresAt > new Date();
 
   return (
     <div className="space-y-10 w-full max-w-5xl mx-auto px-4 sm:px-6">
@@ -167,8 +167,8 @@ const isActive =
                 ? `${currentPlan} plan`
                 : "Active Subscription"
               : subscriptionStatus === "expired"
-                ? "Expired"
-                : "Inactive"}
+              ? "Expired"
+              : "Inactive"}
           </p>
 
           <span
@@ -247,8 +247,8 @@ const isActive =
                 {currentPlan === plan.id
                   ? "Current Plan"
                   : loadingPlan === plan.id
-                    ? "Processing..."
-                    : "Choose Plan"}
+                  ? "Processing..."
+                  : "Choose Plan"}
               </button>
             </motion.div>
           ))}
@@ -295,5 +295,13 @@ const isActive =
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function SubscriptionPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <SubscriptionContent />
+    </Suspense>
   );
 }
