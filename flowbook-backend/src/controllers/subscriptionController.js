@@ -110,9 +110,9 @@ export const verifySubscription = async (req, res, next) => {
       });
     }
 
-    if (metadata.project !== "flowbook") {
-      return res.status(400).json({ message: "Invalid metadata" });
-    }
+    // if (metadata.project !== "flowbook") {
+    //   return res.status(400).json({ message: "Invalid metadata" });
+    // }
 
     if (!metadata || metadata.project !== "flowbook") {
       return res.status(400).json({ message: "Invalid metadata" });
@@ -377,7 +377,7 @@ export const verifyBookingPayment = async (req, res, next) => {
     </div>
   `;
 
-      sendEmail(vendorEmail, "New Booking Received", emailHTML);
+      sendEmail(vendorEmail, "New Booking Received", emailHTML).catch(console.error);
     }
 
     res.json({

@@ -215,6 +215,7 @@ export const updateBookingStatus = async (req, res, next) => {
 
     sendEmail(booking.customerEmail, `Booking ${booking.status}`, emailHTML);
   } catch (err) {
+    console.error(err);
     next(err);
   }
 };
@@ -258,6 +259,7 @@ export const sendOwnerMessage = async (req, res, next) => {
       emailHTML,
     );
   } catch (err) {
+    console.error(err);
     next(err);
   }
 };
@@ -296,4 +298,4 @@ export const getBookedSlots = async (req, res, next) => {
     next(err);
   }
 };
-("");
+

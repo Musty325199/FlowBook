@@ -14,9 +14,16 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!user;
 
   const fetchUser = async () => {
-    const res = await api.get("/api/auth/me");
-    if (res?.data?.user) {
-      setUser(res.data.user);
+    try {
+      const res = await api.get("/api/auth/me");
+
+      if (res?.data?.user) {
+        setUser(res.data.user);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
     }
   };
 

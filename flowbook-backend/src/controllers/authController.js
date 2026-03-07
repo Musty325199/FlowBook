@@ -136,7 +136,7 @@ export const login = async (req, res, next) => {
         secret: user.twoFactorSecret,
         encoding: "base32",
         token: twoFactorCode,
-        window: 1
+        window: 1,
       });
 
       if (!verified) {
@@ -156,8 +156,8 @@ export const login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         twoFactorEnabled: user.twoFactorEnabled,
-        business: user.business
-      }
+        business: user.business,
+      },
     });
   } catch (err) {
     next(err);
@@ -195,17 +195,19 @@ export const logout = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
       await RefreshToken.findOneAndDelete({ token: decoded.tokenId });
     }
-    
+
+    const isProd = process.env.NODE_ENV === "production";
+
     res.clearCookie("accessToken", {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     });
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     });
 
     res.json({ message: "Logged out successfully" });
@@ -279,7 +281,6 @@ export const enable2FA = async (req, res, next) => {
     next(err);
   }
 };
-
 
 export const confirm2FA = async (req, res, next) => {
   try {
