@@ -36,7 +36,7 @@ export default function DashboardLayout({ children }) {
   const avatarLetter = useMemo(() => {
     if (!user) return "U";
     if (user.name) return user.name.trim().charAt(0).toUpperCase();
-    if (user.business?.name)
+    if (user?.business && user.business.name)
       return user.business.name.trim().charAt(0).toUpperCase();
     return "U";
   }, [user]);
@@ -55,8 +55,8 @@ export default function DashboardLayout({ children }) {
 
   const businessName = useMemo(() => {
     if (!user) return "";
-    if (user.business?.name) return user.business.name;
-    if (user.businessName) return user.businessName;
+    if (user?.business && user.business.name) return user.business.name;
+    if (user?.businessName) return user.businessName;
     return "";
   }, [user]);
 
@@ -254,7 +254,7 @@ export default function DashboardLayout({ children }) {
                   >
                     {businessAvatar ? (
                       <img
-                        src={businessAvatar}
+                        src={businessAvatar || ""}
                         alt="avatar"
                         className="w-full h-full object-cover"
                       />
