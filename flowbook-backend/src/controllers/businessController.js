@@ -105,20 +105,28 @@ export const getBusinessPublic = async (req, res, next) => {
 
 export const getPublicBusinesses = async (req, res, next) => {
   try {
-    const { search } = req.query;
+    const { search, service, sort } = req.query;
 
     const query = {
       subscriptionStatus: "active",
       subscriptionExpiresAt: { $gt: new Date() },
     };
 
-    if (search) {
+    if (search && search.trim() !== "") {
       query.name = { $regex: search, $options: "i" };
     }
 
-    const businesses = await Business.find(query)
-      .select("name slug description location avatar")
-      .sort({ createdAt: -1 });
+    if (service && service.trim() !== "") {
+      query.specialties = { $regex: service, $options: "i" };
+    }
+
+    let businesses = await Business.find(query)
+      .select("name slug description location avatar coverImage specialties createdAt")
+      .lean();
+
+    if (sort === "popular") {
+      businesses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
 
     res.json(businesses);
   } catch (err) {

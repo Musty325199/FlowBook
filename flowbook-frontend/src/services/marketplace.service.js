@@ -1,8 +1,17 @@
-import api from "@/lib/api";
+export const getPublicBusinesses = async ({
+  search = "",
+  rating = "",
+  service = "",
+  sort = "",
+} = {}) => {
 
-export const getPublicBusinesses = async (search = "") => {
   const res = await api.get("/api/business/public", {
-    params: { search }
+    params: {
+      search,
+      rating,
+      service,
+      sort,
+    },
   });
 
   return res.data;
