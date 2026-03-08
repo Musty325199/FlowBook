@@ -37,16 +37,15 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`,
-          {},
-          { withCredentials: true },
-        );
+        await api.post("/api/auth/refresh");
 
         processQueue(null);
         return api(originalRequest);
       } catch (err) {
         processQueue(err);
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
@@ -54,7 +53,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;
