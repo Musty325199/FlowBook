@@ -20,23 +20,19 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const setCookies = (res, accessToken, refreshToken) => {
   const isProd = process.env.NODE_ENV === "production";
 
-  const setCookies = (res, accessToken, refreshToken) => {
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 15 * 60 * 1000,
-      path: "/",
-    });
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    maxAge: 15 * 60 * 1000,
+  });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
-  };
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 };
 
 export const register = async (req, res, next) => {
@@ -204,16 +200,14 @@ export const logout = async (req, res, next) => {
 
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      path: "/",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     });
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      path: "/",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     });
 
     res.json({ message: "Logged out successfully" });
