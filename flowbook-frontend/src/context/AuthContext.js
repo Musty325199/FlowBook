@@ -16,7 +16,6 @@ export function AuthProvider({ children }) {
   const fetchUser = async () => {
     try {
       const res = await api.get("/api/auth/me");
-
       if (res?.data?.user) {
         setUser(res.data.user);
       } else {
@@ -30,6 +29,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       try {
+        await new Promise((r) => setTimeout(r, 50));
         await authService.refreshToken();
         await fetchUser();
       } catch {
@@ -97,6 +97,10 @@ export function AuthProvider({ children }) {
   const refreshUser = async () => {
     await fetchUser();
   };
+
+  if (loading) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider
