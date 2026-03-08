@@ -87,17 +87,14 @@ export const createBooking = async (req, res, next) => {
     }
 
     if (workingDay.open && workingDay.close) {
-      const hour = bookingDate.getHours();
-      const minute = bookingDate.getMinutes();
+      const timePart = date.split("T")[1];
+      const [hourStr, minuteStr] = timePart.split(":");
 
-      const start = workingDay.open.split(":");
-      const end = workingDay.close.split(":");
+      const hour = parseInt(hourStr);
+      const minute = parseInt(minuteStr);
 
-      const startHour = parseInt(start[0]);
-      const startMinute = parseInt(start[1]);
-
-      const endHour = parseInt(end[0]);
-      const endMinute = parseInt(end[1]);
+      const [startHour, startMinute] = workingDay.open.split(":").map(Number);
+      const [endHour, endMinute] = workingDay.close.split(":").map(Number);
 
       const bookingMinutes = hour * 60 + minute;
       const startMinutes = startHour * 60 + startMinute;
@@ -298,4 +295,3 @@ export const getBookedSlots = async (req, res, next) => {
     next(err);
   }
 };
-
