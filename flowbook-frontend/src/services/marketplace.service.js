@@ -1,3 +1,5 @@
+import api from "@/lib/api";
+
 export const getPublicBusinesses = async ({
   search = "",
   rating = "",
