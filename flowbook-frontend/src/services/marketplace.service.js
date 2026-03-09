@@ -18,3 +18,9 @@ export const getPublicBusinesses = async ({
 
   return res.data;
 };
+
+
+export const getAllMarketplaceServices = async () => {
+  const res = await api.get("/api/services/public/all");
+  return res.data;
+};

@@ -94,3 +94,20 @@ export const getServicesPublic = async (req, res, next) => {
     next(err);
   }
 };
+
+
+export const getAllServicesPublic = async (req, res, next) => {
+  try {
+    const services = await Service.find()
+      .populate({
+        path: "business",
+        select: "name slug avatar location"
+      })
+      .select("name price duration description image category business")
+      .sort({ createdAt: -1 });
+
+    res.json(services);
+  } catch (err) {
+    next(err);
+  }
+};

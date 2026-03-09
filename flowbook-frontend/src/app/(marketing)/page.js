@@ -1,14 +1,17 @@
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
-import { Scissors, Calendar, Wallet } from "lucide-react";
+import { Scissors, Calendar, Wallet, ShieldCheck } from "lucide-react";
 
 export default function Home() {
   return (
     <>
       <main>
-        <section className="py-28">
-          <Container className="text-center space-y-8">
+
+        <section className="py-28 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-accent/5 to-transparent pointer-events-none" />
+
+          <Container className="text-center space-y-8 relative">
             <p className="text-sm font-semibold text-accent tracking-[0.12em] uppercase">
               Built for Nigerian Barbers & Salons
             </p>
@@ -25,14 +28,26 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-              <Button size="lg">Start Free Trial</Button>
+              <Link href="/register">
+                <Button size="lg">Start Free Trial</Button>
+              </Link>
 
               <Link href="/pricing">
                 <Button variant="secondary" size="lg">
                   View Pricing
                 </Button>
               </Link>
+
+              <Link href="/explore">
+                <Button variant="secondary" size="lg">
+                  Explore Barbers
+                </Button>
+              </Link>
             </div>
+
+            <p className="text-sm text-secondaryText pt-4">
+              Trusted by barbershops across Lagos, Abuja and Ibadan
+            </p>
           </Container>
         </section>
 
@@ -48,7 +63,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-12">
+            <div className="grid md:grid-cols-4 gap-10">
               <div className="space-y-4">
                 <div className="h-12 w-12 flex items-center justify-center rounded-md bg-accent/10 text-accent">
                   <Calendar size={22} />
@@ -69,6 +84,16 @@ export default function Home() {
                 <h3 className="text-lg font-semibold">Secure Payments</h3>
                 <p className="text-secondaryText text-sm">
                   Customers pay upfront through Paystack — no commission taken.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="h-12 w-12 flex items-center justify-center rounded-md bg-accent/10 text-accent">
+                  <ShieldCheck size={22} />
+                </div>
+                <h3 className="text-lg font-semibold">Deposit Protection</h3>
+                <p className="text-secondaryText text-sm">
+                  Prevent no-shows by requiring payment before bookings are confirmed.
                 </p>
               </div>
 
@@ -126,8 +151,7 @@ export default function Home() {
                     <p className="text-xl font-semibold">Friday</p>
                   </div>
                 </div>
-
-                <div className="space-y-4">
+                                <div className="space-y-4">
                   <p className="text-xs font-medium text-secondaryText uppercase tracking-wide">
                     Upcoming Appointments
                   </p>
@@ -211,39 +235,99 @@ export default function Home() {
           </Container>
         </section>
 
+        <section className="py-28">
+          <Container className="space-y-20">
+            <div className="text-center space-y-4 max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Discover barbers near you
+              </h2>
+              <p className="text-secondaryText">
+                Browse professional salons and book services instantly through FlowBook.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-6 shadow-soft space-y-3">
+                <p className="text-sm font-semibold">Premium Fade</p>
+                <p className="text-secondaryText text-xs">30 mins • ₦5,000</p>
+                <Link href="/services">
+                  <span className="text-accent text-sm font-medium hover:underline">
+                    Browse Services
+                  </span>
+                </Link>
+              </div>
+
+              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-6 shadow-soft space-y-3">
+                <p className="text-sm font-semibold">Haircut + Beard</p>
+                <p className="text-secondaryText text-xs">45 mins • ₦7,000</p>
+                <Link href="/services">
+                  <span className="text-accent text-sm font-medium hover:underline">
+                    Browse Services
+                  </span>
+                </Link>
+              </div>
+
+              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-6 shadow-soft space-y-3">
+                <p className="text-sm font-semibold">Luxury Grooming</p>
+                <p className="text-secondaryText text-xs">60 mins • ₦10,000</p>
+                <Link href="/services">
+                  <span className="text-accent text-sm font-medium hover:underline">
+                    Browse Services
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </Container>
+        </section>
+
         <section className="py-28 bg-muted dark:bg-darkSurface/40 border-y border-border dark:border-darkBorder">
           <Container className="space-y-16">
             <div className="text-center space-y-4 max-w-2xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Built for serious salon owners
+                Why salons switch to FlowBook
               </h2>
               <p className="text-secondaryText">
-                FlowBook is structured for professionalism, transparency, and
-                growth.
+                Traditional booking methods are messy. FlowBook brings structure.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-8">
-              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-lg p-8 text-center shadow-soft space-y-3">
-                <p className="text-4xl font-bold tracking-tight">0%</p>
-                <p className="text-secondaryText text-sm">
-                  Commission on bookings
-                </p>
+            <div className="grid md:grid-cols-2 gap-10">
+              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-8 shadow-soft space-y-4">
+                <h3 className="font-semibold text-lg">WhatsApp Booking</h3>
+                <ul className="text-sm text-secondaryText space-y-2">
+                  <li>• Appointments easily forgotten</li>
+                  <li>• No payment protection</li>
+                  <li>• Difficult schedule tracking</li>
+                </ul>
               </div>
 
-              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-lg p-8 text-center shadow-soft space-y-3">
-                <p className="text-4xl font-bold tracking-tight">Weekly</p>
-                <p className="text-secondaryText text-sm">
-                  Transparent payout cycle
-                </p>
+              <div className="bg-surface dark:bg-darkSurface border border-accent rounded-xl p-8 shadow-soft space-y-4">
+                <h3 className="font-semibold text-lg">FlowBook System</h3>
+                <ul className="text-sm text-secondaryText space-y-2">
+                  <li>• Automated booking calendar</li>
+                  <li>• Secure payment before booking</li>
+                  <li>• Weekly payout and revenue tracking</li>
+                </ul>
               </div>
+            </div>
+          </Container>
+        </section>
 
-              <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-lg p-8 text-center shadow-soft space-y-3">
-                <p className="text-4xl font-bold tracking-tight">7 Days</p>
-                <p className="text-secondaryText text-sm">
-                  Grace period after expiry
-                </p>
-              </div>
+        <section className="py-28">
+          <Container className="space-y-12 max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Trusted by growing barbershops
+            </h2>
+
+            <div className="bg-surface dark:bg-darkSurface border border-border dark:border-darkBorder rounded-xl p-8 shadow-soft">
+              <p className="text-lg text-secondaryText">
+                “FlowBook helped me reduce missed appointments and finally
+                organize my bookings professionally.”
+              </p>
+
+              <p className="text-sm font-semibold mt-4">
+                Tunde Adebayo • Lagos Barber
+              </p>
             </div>
           </Container>
         </section>
@@ -294,6 +378,7 @@ export default function Home() {
             </Link>
           </Container>
         </section>
+
       </main>
     </>
   );

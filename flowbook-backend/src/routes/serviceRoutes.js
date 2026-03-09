@@ -7,11 +7,13 @@ import {
   deleteService,
   getServices,
   getServicesPublic,
+  getAllServicesPublic
 } from "../controllers/serviceController.js";
 import requireActiveSubscription from "../middleware/requireActiveSubscription.js";
 
 const router = express.Router();
 
+router.get("/public/all", getAllServicesPublic);
 router.get("/public/:slug", getServicesPublic);
 
 router.use(authMiddleware);

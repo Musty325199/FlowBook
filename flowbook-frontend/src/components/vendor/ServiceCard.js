@@ -6,11 +6,13 @@ export default function ServiceCard({ service, slug }) {
       ? service.image
       : null;
 
+  const vendorSlug = slug || service?.business?.slug;
+
   return (
-    <div className="group overflow-hidden rounded-2xl border border-border dark:border-darkBorder bg-surface dark:bg-darkSurface transition hover:shadow-xl hover:-translate-y-1 flex flex-col">
+    <div className="group h-full overflow-hidden rounded-2xl border border-border dark:border-darkBorder bg-surface dark:bg-darkSurface transition hover:shadow-xl hover:-translate-y-1 flex flex-col">
 
       {imageSrc && (
-        <div className="relative h-40 w-full overflow-hidden">
+        <div className="relative h-32 w-full overflow-hidden">
           <img
             src={imageSrc}
             alt={service.name}
@@ -20,34 +22,47 @@ export default function ServiceCard({ service, slug }) {
         </div>
       )}
 
-      <div className="p-5 flex flex-col flex-1 justify-between space-y-4">
+      <div className="p-5 flex flex-col flex-1">
 
-        <h3 className="font-semibold text-base sm:text-lg leading-tight line-clamp-2">
-          {service.name}
-        </h3>
+        <div className="space-y-3">
+          <h3 className="font-semibold text-base sm:text-lg leading-tight line-clamp-2">
+            {service.name}
+          </h3>
 
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold text-accent whitespace-nowrap">
-            ₦{service.price}
-          </span>
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-semibold text-accent whitespace-nowrap">
+              ₦{service.price}
+            </span>
 
-          <span className="text-secondaryText whitespace-nowrap">
-            {service.duration} mins
-          </span>
+            <span className="text-secondaryText whitespace-nowrap">
+              {service.duration} mins
+            </span>
+          </div>
+
+          {service.description && (
+            <p className="text-sm text-secondaryText line-clamp-2">
+              {service.description}
+            </p>
+          )}
+
+          {service.business && (
+            <Link
+              href={`/vendor/${service.business.slug}`}
+              className="text-xs font-medium text-accent hover:underline w-fit"
+            >
+              {service.business.name}
+            </Link>
+          )}
         </div>
 
-        {service.description && (
-          <p className="text-sm text-secondaryText line-clamp-2">
-            {service.description}
-          </p>
-        )}
-
-        <Link
-          href={`/book/${slug}?service=${service._id}`}
-          className="mt-2 text-center px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition whitespace-nowrap"
-        >
-          Book Appointment
-        </Link>
+        <div className="mt-auto pt-4">
+          <Link
+            href={`/book/${vendorSlug}?service=${service._id}`}
+            className="block text-center px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 transition"
+          >
+            Book Appointment
+          </Link>
+        </div>
 
       </div>
     </div>

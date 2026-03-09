@@ -76,19 +76,45 @@ export default function Navbar() {
             FlowBook
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm">
-            <Link href="/features" className="hover:text-accent transition">
-              Features
-            </Link>
-            <Link href="/pricing" className="hover:text-accent transition">
-              Pricing
-            </Link>
-            <Link href="/faq" className="hover:text-accent transition">
-              FAQ
-            </Link>
-            <Link href="/explore" className="hover:text-accent transition">
-              Explore
-            </Link>
+          <nav className="hidden md:flex items-center text-sm">
+            <div className="flex items-center gap-6 mr-10">
+              <Link
+                href="/explore"
+                className="hover:text-accent transition font-medium"
+              >
+                Explore
+              </Link>
+
+              <Link
+                href="/services"
+                className="hover:text-accent transition font-medium"
+              >
+                Services
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-6 text-secondaryText">
+              <Link
+                href="/features"
+                className="hover:text-accent transition"
+              >
+                Features
+              </Link>
+
+              <Link
+                href="/pricing"
+                className="hover:text-accent transition"
+              >
+                Pricing
+              </Link>
+
+              <Link
+                href="/faq"
+                className="hover:text-accent transition"
+              >
+                FAQ
+              </Link>
+            </div>
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -186,17 +212,24 @@ export default function Navbar() {
               </div>
 
               <div className="flex flex-col gap-4 text-sm">
+                <Link href="/explore" onClick={() => setOpen(false)}>
+                  Explore
+                </Link>
+
+                <Link href="/services" onClick={() => setOpen(false)}>
+                  Services
+                </Link>
+
                 <Link href="/features" onClick={() => setOpen(false)}>
                   Features
                 </Link>
+
                 <Link href="/pricing" onClick={() => setOpen(false)}>
                   Pricing
                 </Link>
+
                 <Link href="/faq" onClick={() => setOpen(false)}>
                   FAQ
-                </Link>
-                <Link href="/explore" onClick={() => setOpen(false)}>
-                  Explore
                 </Link>
               </div>
 
