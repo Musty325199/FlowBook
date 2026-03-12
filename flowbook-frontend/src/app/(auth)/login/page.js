@@ -33,15 +33,25 @@ export default function LoginPage() {
       });
 
       if (res?.requiresTwoFactor) {
-        router.push("/two-factor"); 
+        router.push("/two-factor");
         return;
       }
 
       toast.success("Login successful");
-      router.push("/dashboard");
 
+      if (res?.user?.role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Login failed");
+      const message = err.response?.data?.message || "";
+
+      if (message.toLowerCase().includes("suspended")) {
+        return;
+      }
+
+      toast.error(message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -54,10 +64,19 @@ export default function LoginPage() {
       await googleLogin(credentialResponse.credential);
 
       toast.success("Login successful");
-      router.push("/dashboard");
 
+      router.refresh();
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 300);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Google login failed");
+      const message = err.response?.data?.message || "";
+
+      if (message.toLowerCase().includes("suspended")) {
+        return;
+      }
+
+      toast.error(message || "Google login failed");
     } finally {
       setLoading(false);
     }
@@ -65,11 +84,8 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-8">
-
       <div className="space-y-3 text-center">
-        <h2 className="text-2xl font-bold tracking-tight">
-          Welcome back
-        </h2>
+        <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
 
         <p className="text-sm text-secondaryText max-w-xs mx-auto leading-relaxed">
           Sign in to manage your salon dashboard.
@@ -94,26 +110,20 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleLogin} className="space-y-5 text-sm">
-
         <input
           type="email"
           placeholder="Email Address"
           value={form.email}
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent"
         />
 
         <div className="relative">
-
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             value={form.password}
-            onChange={(e) =>
-              setForm({ ...form, password: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="w-full px-4 py-2.5 rounded-lg border border-border dark:border-darkBorder bg-background dark:bg-darkBackground focus:outline-none focus:ring-2 focus:ring-accent pr-10"
           />
 
@@ -124,14 +134,10 @@ export default function LoginPage() {
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
-
         </div>
 
         <div className="flex items-center justify-between text-xs">
-          <Link
-            href="/forgot-password"
-            className="text-accent hover:underline"
-          >
+          <Link href="/forgot-password" className="text-accent hover:underline">
             Forgot password?
           </Link>
         </div>
@@ -143,19 +149,14 @@ export default function LoginPage() {
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
-
       </form>
 
       <p className="text-xs text-center text-secondaryText">
         Don’t have an account?{" "}
-        <Link
-          href="/register"
-          className="text-accent hover:underline"
-        >
+        <Link href="/register" className="text-accent hover:underline">
           Create one
         </Link>
       </p>
-
     </div>
   );
 }

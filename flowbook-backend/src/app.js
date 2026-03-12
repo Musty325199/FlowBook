@@ -14,7 +14,7 @@ import businessRoutes from "./routes/businessRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
-
+import adminRoutes from "./routes/adminRoutes.js";
 
 import errorHandler from "./middleware/errorMiddleware.js";
 
@@ -52,7 +52,10 @@ app.use(
   })
 );
 
-app.use("/api/subscriptions/webhook", express.raw({ type: "application/json" }));
+app.post(
+  "/api/subscriptions/webhook",
+  express.raw({ type: "application/json" })
+);
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -70,6 +73,7 @@ app.use("/api/business", businessRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

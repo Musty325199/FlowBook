@@ -17,10 +17,16 @@ export const createBooking = async (req, res, next) => {
       date,
     } = req.body;
 
-    const business = await Business.findOne({ slug });
+    const business = await Business.findOne({ slug }).populate("owner");
 
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
+    }
+
+    if (business.owner?.suspended) {
+      return res.status(403).json({
+        message: "This vendor is currently unavailable",
+      });
     }
 
     const isActive =

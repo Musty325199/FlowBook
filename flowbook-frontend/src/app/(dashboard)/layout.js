@@ -8,6 +8,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import clsx from "clsx";
 import { useAuth } from "@/context/AuthContext";
 import { getBusiness } from "@/services/business.service";
+import VendorRouteGuard from "@/components/dashboard/VendorRouteGuard";
 
 export default function DashboardLayout({ children }) {
   const [open, setOpen] = useState(false);
@@ -165,6 +166,7 @@ export default function DashboardLayout({ children }) {
     new Date(expiresAt) > new Date();
 
   return (
+    <VendorRouteGuard>
     <div className="min-h-screen bg-background dark:bg-darkBackground flex">
       {open && (
         <div
@@ -321,5 +323,6 @@ export default function DashboardLayout({ children }) {
         </main>
       </div>
     </div>
+    </VendorRouteGuard>
   );
 }

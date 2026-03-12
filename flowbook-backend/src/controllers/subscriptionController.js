@@ -35,9 +35,20 @@ export const startSubscription = async (req, res, next) => {
     }
 
     let amount = 0;
+    let price = 0;
+    let billingCycle = "monthly";
 
-    if (plan === "monthly") amount = 900000;
-    if (plan === "yearly") amount = 9000000;
+    if (plan === "monthly") {
+      amount = 900000;
+      price = 9000;
+      billingCycle = "monthly";
+    }
+
+    if (plan === "yearly") {
+      amount = 9000000;
+      price = 90000;
+      billingCycle = "yearly";
+    }
 
     if (!amount) {
       return res.status(400).json({ message: "Invalid plan" });
@@ -50,8 +61,10 @@ export const startSubscription = async (req, res, next) => {
         project: "flowbook",
         businessId: business._id.toString(),
         plan,
+        price,
+        billingCycle,
       },
-      `${process.env.CLIENT_URL}/dashboard/subscription`,
+      `${process.env.CLIENT_URL}/dashboard/subscription`
     );
 
     res.json({
@@ -85,40 +98,11 @@ export const verifySubscription = async (req, res, next) => {
 
     const metadata = transaction.metadata;
 
-    if (!metadata) {
-      return res.status(400).json({ message: "Invalid metadata" });
-    }
-
-    if (metadata.project === "flowbook_booking") {
-      const bookingData = JSON.parse(metadata.bookingData);
-
-      const existingBooking = await Booking.findOne({
-        customerEmail: bookingData.customerEmail,
-        date: bookingData.date,
-        business: bookingData.business,
-      });
-
-      if (existingBooking) {
-        return res.json({ message: "Booking already created" });
-      }
-
-      const booking = await Booking.create(bookingData);
-
-      return res.json({
-        message: "Booking created successfully",
-        booking,
-      });
-    }
-
-    // if (metadata.project !== "flowbook") {
-    //   return res.status(400).json({ message: "Invalid metadata" });
-    // }
-
     if (!metadata || metadata.project !== "flowbook") {
       return res.status(400).json({ message: "Invalid metadata" });
     }
 
-    const { businessId, plan } = metadata;
+    const { businessId, plan, price, billingCycle } = metadata;
 
     const business = await Business.findById(businessId);
 
@@ -126,30 +110,35 @@ export const verifySubscription = async (req, res, next) => {
       return res.status(404).json({ message: "Business not found" });
     }
 
-    let expiresAt = new Date();
+    const now = new Date();
+    let expiresAt = new Date(now);
 
-    if (
-      business.subscriptionExpiresAt &&
-      business.subscriptionExpiresAt > new Date()
-    ) {
-      expiresAt = new Date(business.subscriptionExpiresAt);
+    if (plan === "monthly") expiresAt.setMonth(expiresAt.getMonth() + 1);
+    if (plan === "yearly") expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    await Subscription.updateMany(
+      { business: businessId, status: "active" },
+      { status: "inactive" }
+    );
+
+    try {
+      await Subscription.create({
+        business: businessId,
+        status: "active",
+        reference,
+        plan,
+        price,
+        billingCycle,
+        startedAt: now,
+        expiresAt,
+        nextBillingDate: expiresAt,
+      });
+    } catch (err) {
+      if (err.code === 11000) {
+        return res.json({ message: "Subscription already processed" });
+      }
+      throw err;
     }
-
-    if (plan === "monthly") {
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-    }
-
-    if (plan === "yearly") {
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-    }
-
-    await Subscription.create({
-      business: businessId,
-      status: "active",
-      reference,
-      plan,
-      expiresAt,
-    });
 
     await Business.findByIdAndUpdate(businessId, {
       subscriptionStatus: "active",
@@ -157,9 +146,7 @@ export const verifySubscription = async (req, res, next) => {
       subscriptionExpiresAt: expiresAt,
     });
 
-    res.json({
-      message: "Subscription activated",
-    });
+    res.json({ message: "Subscription activated" });
   } catch (err) {
     next(err);
   }
@@ -190,7 +177,8 @@ export const webhook = async (req, res, next) => {
       return res.sendStatus(200);
     }
 
-    const { businessId, plan } = metadata;
+    const { businessId, plan, price, billingCycle } = metadata;
+
     const reference = event.data.reference;
 
     const existing = await Subscription.findOne({ reference });
@@ -205,14 +193,8 @@ export const webhook = async (req, res, next) => {
       return res.sendStatus(200);
     }
 
-    let expiresAt = new Date();
-
-    if (
-      business.subscriptionExpiresAt &&
-      business.subscriptionExpiresAt > new Date()
-    ) {
-      expiresAt = new Date(business.subscriptionExpiresAt);
-    }
+    const now = new Date();
+    let expiresAt = new Date(now);
 
     if (plan === "monthly") {
       expiresAt.setMonth(expiresAt.getMonth() + 1);
@@ -222,13 +204,29 @@ export const webhook = async (req, res, next) => {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     }
 
-    await Subscription.create({
-      business: businessId,
-      status: "active",
-      reference,
-      plan,
-      expiresAt,
-    });
+    await Subscription.updateMany(
+      { business: businessId, status: "active" },
+      { status: "inactive" }
+    );
+
+    try {
+      await Subscription.create({
+        business: businessId,
+        status: "active",
+        reference,
+        plan,
+        price,
+        billingCycle,
+        startedAt: now,
+        expiresAt,
+        nextBillingDate: expiresAt,
+      });
+    } catch (err) {
+      if (err.code === 11000) {
+        return res.sendStatus(200);
+      }
+      throw err;
+    }
 
     await Business.findByIdAndUpdate(businessId, {
       subscriptionStatus: "active",
@@ -238,7 +236,6 @@ export const webhook = async (req, res, next) => {
 
     res.sendStatus(200);
   } catch (err) {
-    console.error("Paystack webhook error:", err);
     next(err);
   }
 };
@@ -288,7 +285,7 @@ export const startBookingPayment = async (req, res, next) => {
         project: "flowbook_booking",
         bookingData: JSON.stringify(bookingData),
       },
-      `${process.env.CLIENT_URL}/booking/success`,
+      `${process.env.CLIENT_URL}/booking/success`
     );
 
     const data = payment.data || payment;
@@ -298,7 +295,6 @@ export const startBookingPayment = async (req, res, next) => {
       reference: data.reference,
     });
   } catch (err) {
-    console.error("Booking payment init error:", err);
     next(err);
   }
 };
@@ -350,7 +346,7 @@ export const verifyBookingPayment = async (req, res, next) => {
 
     const business = await Business.findById(booking.business).populate(
       "owner",
-      "email",
+      "email"
     );
 
     const vendorEmail = business?.owner?.email;
@@ -359,25 +355,19 @@ export const verifyBookingPayment = async (req, res, next) => {
       const bookingDate = new Date(booking.date);
 
       const emailHTML = `
-    <div style="font-family:Arial;padding:20px">
+      <div style="font-family:Arial;padding:20px">
       <h2>New Booking Received</h2>
-
-      <p>Hello,</p>
-
-      <p>You have a new booking.</p>
-
       <p><strong>Customer:</strong> ${booking.customerName}</p>
       <p><strong>Service:</strong> ${service?.name || "Service"}</p>
       <p><strong>Date:</strong> ${bookingDate.toLocaleDateString()}</p>
       <p><strong>Time:</strong> ${bookingDate.toLocaleTimeString()}</p>
-
       <p>Login to your FlowBook dashboard to manage this booking.</p>
+      </div>
+      `;
 
-      <p>— FlowBook</p>
-    </div>
-  `;
-
-      sendEmail(vendorEmail, "New Booking Received", emailHTML).catch(console.error);
+      sendEmail(vendorEmail, "New Booking Received", emailHTML).catch(
+        console.error
+      );
     }
 
     res.json({

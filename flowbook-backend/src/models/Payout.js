@@ -5,32 +5,36 @@ const payoutSchema = new mongoose.Schema(
     business: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
-      required: true
+      required: true,
     },
 
     amount: {
       type: Number,
-      required: true
+      required: true,
     },
 
     reference: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
 
     status: {
       type: String,
       enum: ["pending", "paid"],
-      default: "pending"
+      default: "pending",
+    },
+    paidAt: {
+      type: Date,
+      default: null,
     },
 
     note: {
       type: String,
-      default: null
-    }
+      default: null,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Payout", payoutSchema);

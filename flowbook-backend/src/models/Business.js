@@ -10,145 +10,153 @@ const businessSchema = new mongoose.Schema(
       unique: true,
       index: true,
       lowercase: true,
-      trim: true,
+      trim: true
     },
 
     description: {
       type: String,
       default: "",
-      maxlength: 300,
+      maxlength: 300
     },
+
     about: {
-  type: String,
-  default: "",
-  maxlength: 1000,
+      type: String,
+      default: "",
+      maxlength: 1000
     },
+
     yearsOfExperience: {
       type: Number,
       default: 0,
-      min: 0,
+      min: 0
     },
+
     specialties: {
       type: [String],
-      default: [],
+      default: []
     },
+
     avatar: {
       type: String,
-      default: "",
+      default: ""
     },
 
     coverImage: {
       type: String,
-      default: "",
+      default: ""
     },
 
     location: {
       type: String,
       default: "",
-      trim: true,
+      trim: true
     },
+
     phone: {
       type: String,
       default: "",
-      trim: true,
+      trim: true
     },
 
     email: {
       type: String,
       default: "",
       trim: true,
-      lowercase: true,
+      lowercase: true
     },
 
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true
     },
 
     workingHours: {
       Monday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: false },
+        closed: { type: Boolean, default: false }
       },
       Tuesday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: false },
+        closed: { type: Boolean, default: false }
       },
       Wednesday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: false },
+        closed: { type: Boolean, default: false }
       },
       Thursday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: false },
+        closed: { type: Boolean, default: false }
       },
       Friday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: false },
+        closed: { type: Boolean, default: false }
       },
       Saturday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: false },
+        closed: { type: Boolean, default: false }
       },
       Sunday: {
         open: { type: String, default: "" },
         close: { type: String, default: "" },
-        closed: { type: Boolean, default: true },
-      },
+        closed: { type: Boolean, default: true }
+      }
     },
 
     subscriptionStatus: {
       type: String,
       enum: ["free", "active", "expired"],
       default: "free",
+      index: true
     },
 
     subscriptionPlan: {
       type: String,
       enum: ["monthly", "yearly", null],
-      default: null,
+      default: null
     },
 
     subscriptionExpiresAt: {
       type: Date,
       default: null,
+      index: true
     },
 
     availableBalance: {
       type: Number,
       default: 0,
-      min: 0,
+      min: 0
     },
 
     totalRevenue: {
       type: Number,
       default: 0,
-      min: 0,
+      min: 0
     },
 
     paystackRecipientCode: {
       type: String,
-      default: null,
+      default: null
     },
 
     payoutLocked: {
       type: Boolean,
-      default: false,
+      default: false
     },
 
     autoConfirmBookings: {
       type: Boolean,
-      default: false,
-    },
+      default: false
+    }
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 businessSchema.methods.isSubscriptionActive = function () {

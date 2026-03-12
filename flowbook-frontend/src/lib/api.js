@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 
 const baseURL =
   process.env.NODE_ENV === "development"
@@ -12,6 +13,7 @@ const api = axios.create({
 
 let isRefreshing = false;
 let failedQueue = [];
+let suspensionHandled = false;
 
 const processQueue = (error) => {
   failedQueue.forEach((p) => {
@@ -25,6 +27,24 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.message?.toLowerCase().includes("suspended") &&
+      !originalRequest.url.includes("/api/auth/me")
+    ) {
+      if (!suspensionHandled && typeof window !== "undefined") {
+        suspensionHandled = true;
+
+        toast.error("Your account has been suspended. Contact support.");
+
+        setTimeout(() => {
+          window.location.href = "/account-suspended";
+        }, 1200);
+      }
+
+      return Promise.reject(error);
+    }
 
     if (
       error.response?.status === 401 &&
@@ -48,9 +68,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err);
+
         if (typeof window !== "undefined") {
           window.location.href = "/login";
         }
+
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

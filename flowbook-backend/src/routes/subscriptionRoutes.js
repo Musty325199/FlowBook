@@ -11,6 +11,11 @@ import {
 
 const router = express.Router();
 
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  webhook
+);
 
 router.post("/start", authMiddleware, startSubscription);
 
@@ -18,18 +23,8 @@ router.post("/verify", authMiddleware, verifySubscription);
 
 router.post("/cancel", authMiddleware, cancelSubscription);
 
-
-
 router.post("/start-booking", startBookingPayment);
 
 router.post("/verify-booking", verifyBookingPayment);
-
-
-
-router.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  webhook
-);
 
 export default router;

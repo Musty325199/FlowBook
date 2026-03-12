@@ -118,6 +118,12 @@ export const login = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    if (user.suspended) {
+  return res.status(403).json({
+    message: "Your account has been suspended. Contact support."
+  });
+}
+
     if (!user.isVerified) {
       return res.status(403).json({ message: "Email not verified" });
     }
@@ -328,6 +334,12 @@ export const googleLogin = async (req, res, next) => {
     const payload = ticket.getPayload();
 
     let user = await User.findOne({ email: payload.email });
+    
+    if (user && user.suspended) {
+  return res.status(403).json({
+    message: "Your account has been suspended. Contact support."
+  });
+}
 
     if (!user) {
       user = await User.create({
@@ -369,3 +381,5 @@ export const getMe = async (req, res, next) => {
     next(err);
   }
 };
+
+
