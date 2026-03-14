@@ -8,10 +8,7 @@ import User from "../models/User.js";
 import Business from "../models/Business.js";
 import RefreshToken from "../models/RefreshToken.js";
 import { hashPassword, comparePassword } from "../utils/hashPassword.js";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from "../utils/generateTokens.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/generateTokens.js";
 import slugify from "../utils/slugify.js";
 import { sendEmail } from "../services/emailService.js";
 
@@ -20,17 +17,20 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const setCookies = (res, accessToken, refreshToken) => {
   const isProd = process.env.NODE_ENV === "production";
 
-  res.cookie("accessToken", accessToken, {
+  const cookieOptions = {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? "none" : "lax",
+    domain: isProd ? ".dreycart.com" : undefined,
+  };
+
+  res.cookie("accessToken", accessToken, {
+    ...cookieOptions,
     maxAge: 15 * 60 * 1000,
   });
 
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
@@ -77,7 +77,7 @@ export const register = async (req, res, next) => {
     await sendEmail(
       email,
       "Verify your FlowBook account",
-      `<p>Click below to verify:</p><a href="${verifyUrl}">${verifyUrl}</a>`,
+      `<p>Click below to verify:</p><a href="${verifyUrl}">${verifyUrl}</a>`
     );
 
     res.status(201).json({ message: "Registration successful. Check email." });
@@ -114,29 +114,24 @@ export const login = async (req, res, next) => {
     const { email, password, twoFactorCode } = req.body;
 
     const user = await User.findOne({ email }).populate("business");
-    if (!user) {
+    if (!user)
       return res.status(400).json({ message: "Invalid credentials" });
-    }
 
-    if (user.suspended) {
-  return res.status(403).json({
-    message: "Your account has been suspended. Contact support."
-  });
-}
+    if (user.suspended)
+      return res.status(403).json({
+        message: "Your account has been suspended. Contact support.",
+      });
 
-    if (!user.isVerified) {
+    if (!user.isVerified)
       return res.status(403).json({ message: "Email not verified" });
-    }
 
     const match = await comparePassword(password, user.password);
-    if (!match) {
+    if (!match)
       return res.status(400).json({ message: "Invalid credentials" });
-    }
 
     if (user.twoFactorEnabled) {
-      if (!twoFactorCode) {
+      if (!twoFactorCode)
         return res.status(200).json({ requiresTwoFactor: true });
-      }
 
       const verified = speakeasy.totp.verify({
         secret: user.twoFactorSecret,
@@ -145,9 +140,8 @@ export const login = async (req, res, next) => {
         window: 1,
       });
 
-      if (!verified) {
+      if (!verified)
         return res.status(400).json({ message: "Invalid 2FA code" });
-      }
     }
 
     const accessToken = generateAccessToken(user._id);
@@ -197,6 +191,7 @@ export const refresh = async (req, res, next) => {
 export const logout = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
+
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
       await RefreshToken.findOneAndDelete({ token: decoded.tokenId });
@@ -208,12 +203,14 @@ export const logout = async (req, res, next) => {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? "none" : "lax",
+      domain: isProd ? ".dreycart.com" : undefined,
     });
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? "none" : "lax",
+      domain: isProd ? ".dreycart.com" : undefined,
     });
 
     res.json({ message: "Logged out successfully" });
