@@ -6,7 +6,7 @@ import cron from "node-cron";
 import Subscription from "./models/Subscription.js";
 import Business from "./models/Business.js";
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION ");
